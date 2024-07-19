@@ -152,11 +152,14 @@ app.get("/verifyUser", async (req, res) => {
 
 app.get("/get-chats", async (req, res) => {
   try {
-    const { user1, user2 } = req.query;
+    const { user1, user2, offset, limit } = req.query;
     const response = await pool.query(
-      "SELECT * FROM chats WHERE (from_user = $1 AND to_user = $2) OR (from_user = $2 AND to_user = $1)",
-      [user1, user2]
+      "SELECT * FROM chats WHERE (from_user = $1 AND to_user = $2) OR (from_user = $2 AND to_user = $1) ORDER BY id DESC LIMIT $3 OFFSET $4",
+      [user1, user2, limit, offset]
     );
+    //sort response.rows on ascending id
+    response.rows.sort((a, b) => a.id - b.id);
+    console.log("response.rows: ", response.rows);
     res.send(response.rows);
   } catch (err) {
     console.error(err);
