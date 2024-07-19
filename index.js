@@ -178,7 +178,10 @@ app.post("/register", async (req, res) => {
   try {
     //check if all required fields are filled
     if (!name || !email || !password) {
-      return res.status(400).send("Name, email and password are required");
+      return res.status(400).send({
+        error: "Name, email and password are required",
+        body: req.body,
+      });
     }
 
     //check if user exists
