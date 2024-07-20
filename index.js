@@ -129,7 +129,20 @@ app.get("/get-contacts", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT email, name, lastSeen FROM users WHERE email != $1",
+      "SELECT email, name, lastseen FROM users WHERE email != $1",
+      [email]
+    );
+    res.send(response.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.get("/get-friends", async (req, res) => {
+  try {
+    const { email } = req.query;
+    const response = await pool.query(
+      "SELECT friend_email, friend_name, friend_lastseen FROM friends WHERE user_email = $1",
       [email]
     );
     res.send(response.rows);
