@@ -129,7 +129,7 @@ app.get("/get-contacts", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT email, name, lastSeen, friends FROM users WHERE email != $1",
+      "SELECT email, name, lastSeen FROM users WHERE email != $1",
       [email]
     );
     res.send(response.rows);
