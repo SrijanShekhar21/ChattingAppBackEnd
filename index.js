@@ -88,6 +88,15 @@ io.on("connection", (socket) => {
     io.emit("active-users", users);
   });
 
+  socket.on("send-friend-request", (request) => {
+    //this is temporary friend req to only online users
+    console.log("friend req: ", request);
+    const { from, to } = request;
+    const toUser = users.find((user) => user.email === to);
+    const toUserID = toUser ? toUser.id : null;
+    io.to(toUserID).emit("friend-requests-inbox", request);
+  });
+
   socket.on("disconnect", () => {
     console.log("disconnected with id:", socket.id);
 
