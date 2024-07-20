@@ -173,7 +173,7 @@ app.get("/get-friend-requests", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT * FROM friendrequests WHERE to_email = $1",
+      "SELECT * FROM friendrequests WHERE to_email = $1 OR from_email = $1",
       [email]
     );
     res.send(response.rows);
