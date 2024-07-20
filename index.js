@@ -169,6 +169,19 @@ app.get("/get-friends", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+app.get("/get-friend-requests", async (req, res) => {
+  try {
+    const { email } = req.query;
+    const response = await pool.query(
+      "SELECT * FROM friendrequests WHERE to_email = $1",
+      [email]
+    );
+    res.send(response.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 app.get("/verifyUser", async (req, res) => {
   try {
