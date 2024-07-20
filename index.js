@@ -1,4 +1,4 @@
-import express from "express";
+import express, { query } from "express";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import env from "dotenv";
@@ -106,6 +106,30 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("accept-friend-request", async (friends) => {
+    const { friend1Email, friend1Name, friend2Email, friend2Name } = friends;
+    // SELECT friend_email, friend_name, friend_lastseen FROM friends WHERE user_email = $1
+    const res1 = await pool.query(
+      "INSERT INTO friends (user_email, friend_email, friend_name) VALUES ($1, $2, $3) RETURNING *",
+      [friend1Email, friend2Email, friend2Name]
+    );
+    const res2 = await pool.query(
+      "INSERT INTO friends (user_email, friend_email, friend_name) VALUES ($1, $2, $3) RETURNING *",
+      [friend2Email, friend1Email, friend1Name]
+    );
+    socket.emit("accepted-req-new-friends", [...res1.rows, ...res2.rows]);
+
+    await pool.query(
+      "DELETE FROM friendrequests WHERE to_email = $1 OR to_email = $2 OR from_email = $1 OR from_email = $2",
+      [friend1Email, friend2Email]
+    );
+    const response = await pool.query(
+      "SELECT * FROM friendrequests WHERE to_email = $1 OR from_email = $1",
+      [friend1Email]
+    );
+    socket.emit("friend-req-accepted", response.rows);
+  });
+
   socket.on("disconnect", () => {
     console.log("disconnected with id:", socket.id);
 
@@ -125,6 +149,17 @@ io.on("connection", (socket) => {
     //add this time to lastSeen column in users table
     pool.query(
       "UPDATE users SET lastseen = $1 WHERE email = $2",
+      [time, disconnectedUser?.email || null],
+      (err, res) => {
+        if (err) {
+          console.error("Error updating lastseen: ", err);
+        }
+      }
+    );
+
+    //add this time to lastSeen column in friends table
+    pool.query(
+      "UPDATE friends SET friend_lastseen = $1 WHERE friend_email = $2",
       [time, disconnectedUser?.email || null],
       (err, res) => {
         if (err) {
