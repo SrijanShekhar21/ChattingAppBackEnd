@@ -83,18 +83,27 @@ io.on("connection", (socket) => {
 
   socket.on("user-connected", (user) => {
     socket.join(user.email);
+    //io.to(user.email).emit("new-msgs-and-requests") //to be coded
     users.push(user);
     console.log("active users: ", users);
     io.emit("active-users", users);
   });
 
-  socket.on("send-friend-request", (request) => {
-    //this is temporary friend req to only online users
+  socket.on("send-friend-request", async (request) => {
     console.log("friend req: ", request);
     const { from, to } = request;
-    const toUser = users.find((user) => user.email === to);
-    const toUserID = toUser ? toUser.id : null;
-    io.to(toUserID).emit("friend-requests-inbox", request);
+    //add this friend request to friendrequests table and then send all friend request to (to);
+    try {
+      const response = await pool.query(
+        "INSERT INTO friendrequests (to_email, from_email) VALUES ($1, $2) RETURNING *",
+        [to, from]
+      );
+      const toUser = users.find((user) => user.email === to);
+      const toUserID = toUser ? toUser.id : null;
+      io.to(toUserID).emit("friend-requests-inbox", response.rows);
+    } catch (error) {
+      console.log("Error in saving friend request to db");
+    }
   });
 
   socket.on("disconnect", () => {
