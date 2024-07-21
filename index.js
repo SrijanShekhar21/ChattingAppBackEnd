@@ -97,7 +97,21 @@ io.on("connection", (socket) => {
     console.log("friend req: ", request);
     //add this data to db
     const { useremail, username, friendemail, friendname } = request;
-    io.to(useremail).emit("req-sent", "hello");
+    try {
+      const response1 = await pool.query(
+        "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [useremail, username, friendemail, friendname, 2]
+      );
+      io.to(useremail).emit("send-friend-request", response1.rows);
+
+      const response2 = await pool.query(
+        "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [friendemail, friendname, useremail, username, 1]
+      );
+      io.to(friendemail).emit("incoming-friend-request", response2.rows);
+    } catch (error) {
+      console.log("error sending friend request", error);
+    }
   });
 
   // socket.on("accept-friend-request", async (friends) => {
