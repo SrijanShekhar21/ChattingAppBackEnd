@@ -89,20 +89,15 @@ io.on("connection", (socket) => {
     io.emit("active-users", users);
   });
 
+  //0 -> friends
+  //1 -> user pe friend ne req bheja hai
+  //2 -> user ne friend ko req bheja hai
+
   socket.on("send-friend-request", async (request) => {
     console.log("friend req: ", request);
-    const { user1, user2, status, user1name, user2name } = request;
-    try {
-      const response = await pool.query(
-        "INSERT INTO friends (user1, user2, status, user1name, user2name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [user1, user2, status, user1name, user2name]
-      );
-      io.to(user1)
-        .to(user2)
-        .emit("send-friend-request-response", response.rows);
-    } catch (error) {
-      console.log("Error in saving friend request to db");
-    }
+    //add this data to db
+    const { useremail, username, friendemail, friendname } = request;
+    io.to(useremail).emit("req-sent", "hello");
   });
 
   // socket.on("accept-friend-request", async (friends) => {
