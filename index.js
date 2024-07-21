@@ -195,7 +195,7 @@ app.get("/get-friends", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 WHERE status = 0",
+      "SELECT * FROM friends WHERE useremail = $1 AND status = 0",
       [email]
     );
     res.send(response.rows);
@@ -208,7 +208,7 @@ app.get("/get-friend-requests", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 WHERE status = 1",
+      "SELECT * FROM friends WHERE useremail = $1 AND status = 1",
       [email]
     );
     res.send(response.rows);
@@ -221,7 +221,7 @@ app.get("/get-sent-friend-requests", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 WHERE status = 2",
+      "SELECT * FROM friends WHERE useremail = $1 AND status = 2",
       [email]
     );
     res.send(response.rows);
