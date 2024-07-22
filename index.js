@@ -102,12 +102,13 @@ io.on("connection", (socket) => {
         "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [useremail, username, friendemail, friendname, 2]
       );
-      io.to(useremail).emit("send-friend-request", response1.rows);
 
       const response2 = await pool.query(
         "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [friendemail, friendname, useremail, username, 1]
       );
+      
+      io.to(useremail).emit("send-friend-request", response1.rows);
       io.to(friendemail).emit("incoming-friend-request", response2.rows);
     } catch (error) {
       console.log("error sending friend request", error);
@@ -204,33 +205,7 @@ app.get("/get-friends", async (req, res) => {
   try {
     const { email } = req.query;
     const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 AND status = 0",
-      [email]
-    );
-    res.send(response.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-app.get("/get-friend-requests", async (req, res) => {
-  try {
-    const { email } = req.query;
-    const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 AND status = 1",
-      [email]
-    );
-    res.send(response.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-app.get("/get-sent-friend-requests", async (req, res) => {
-  try {
-    const { email } = req.query;
-    const response = await pool.query(
-      "SELECT * FROM friends WHERE useremail = $1 AND status = 2",
+      "SELECT * FROM friends WHERE useremail = $1",
       [email]
     );
     res.send(response.rows);
