@@ -84,7 +84,7 @@ io.on("connection", (socket) => {
   socket.on("user-connected", (user) => {
     socket.join(user.email);
     //io.to(user.email).emit("new-msgs-and-requests") //to be coded
-    users.push(user);
+    users.push(user.email);
     console.log("active users: ", users);
     io.emit("active-users", users);
   });
@@ -140,12 +140,8 @@ io.on("connection", (socket) => {
     io.to(friendemail).emit("friend-request-accepted", response2.rows);
   });
 
-  socket.on("disconnect", () => {
-    console.log("disconnected with id:", socket.id);
-
-    //get the email of the disconnected user
-    const disconnectedUser = users.find((user) => user.id === socket.id);
-    console.log("disconnected user: ", disconnectedUser);
+  socket.on("user-disconnect", (useremail) => {
+    console.log("disconnected with email:", useremail);
 
     //get current time
     const time = new Date().toLocaleTimeString("en-US", {
@@ -157,28 +153,16 @@ io.on("connection", (socket) => {
     console.log("disconnected at: ", time);
 
     //add this time to lastSeen column in users table
-    pool.query(
-      "UPDATE users SET lastseen = $1 WHERE email = $2",
-      [time, disconnectedUser?.email || null],
-      (err, res) => {
-        if (err) {
-          console.error("Error updating lastseen: ", err);
-        }
-      }
-    );
+    try {
+      pool.query("UPDATE friends SET lastseen = $1 WHERE friendemail = $2", [
+        time,
+        useremail,
+      ]);
+    } catch (error) {
+      console.log("error disconnecting db");
+    }
 
-    //add this time to lastSeen column in friends table
-    pool.query(
-      "UPDATE friends SET friend_lastseen = $1 WHERE friend_email = $2",
-      [time, disconnectedUser?.email || null],
-      (err, res) => {
-        if (err) {
-          console.error("Error updating lastseen: ", err);
-        }
-      }
-    );
-
-    users = users.filter((user) => user.id !== socket.id);
+    users = users.filter((user) => user !== useremail);
     console.log("active users: ", users);
     io.emit("active-users", users);
   });
