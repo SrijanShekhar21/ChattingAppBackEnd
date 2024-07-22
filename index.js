@@ -127,10 +127,17 @@ io.on("connection", (socket) => {
       [friendemail, useremail]
     );
 
-    io.to(useremail).to(friendemail).emit("friend-request-accepted", {
-      useremail: useremail,
-      friendemail: friendemail,
-    });
+    const response1 = await pool.query(
+      "SELECT * FROM friends WHERE useremail = $1",
+      [useremail]
+    );
+    io.to(useremail).emit("friend-request-accepted", response1.rows);
+
+    const response2 = await pool.query(
+      "SELECT * FROM friends WHERE useremail = $1",
+      [friendemail]
+    );
+    io.to(friendemail).emit("friend-request-accepted", response2.rows);
   });
 
   socket.on("disconnect", () => {
