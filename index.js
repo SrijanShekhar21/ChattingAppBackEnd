@@ -124,12 +124,12 @@ io.on("connection", (socket) => {
 
     await pool.query(
       "UPDATE friends SET (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5)",
-      [useremail, username, friendemail, friendname, 0]
+      [friendemail, friendname, useremail, username, 0]
     );
 
     io.to(useremail).to(friendemail).emit("friend-request-accepted", {
-      useremail,
-      friendemail,
+      useremail: useremail,
+      friendemail: friendemail,
     });
   });
 
