@@ -118,13 +118,13 @@ io.on("connection", (socket) => {
   socket.on("accept-friend-request", async (request) => {
     const { useremail, username, friendemail, friendname } = request;
     await pool.query(
-      "UPDATE friends SET (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5)",
-      [useremail, username, friendemail, friendname, 0]
+      "UPDATE friends SET status = 0 WHERE useremail = $1 AND friendemail = $2",
+      [useremail, friendemail]
     );
 
     await pool.query(
-      "UPDATE friends SET (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5)",
-      [friendemail, friendname, useremail, username, 0]
+      "UPDATE friends SET status = 0 WHERE useremail = $1 AND friendemail = $2",
+      [friendemail, useremail]
     );
 
     io.to(useremail).to(friendemail).emit("friend-request-accepted", {
