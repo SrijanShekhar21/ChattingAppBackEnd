@@ -107,7 +107,7 @@ io.on("connection", (socket) => {
         "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [friendemail, friendname, useremail, username, 1]
       );
-      
+
       io.to(useremail).emit("send-friend-request", response1.rows);
       io.to(friendemail).emit("incoming-friend-request", response2.rows);
     } catch (error) {
@@ -115,29 +115,23 @@ io.on("connection", (socket) => {
     }
   });
 
-  // socket.on("accept-friend-request", async (friends) => {
-  //   const { friend1Email, friend1Name, friend2Email, friend2Name } = friends;
-  //   // SELECT friend_email, friend_name, friend_lastseen FROM friends WHERE user_email = $1
-  //   const res1 = await pool.query(
-  //     "INSERT INTO friends (user_email, friend_email, friend_name) VALUES ($1, $2, $3) RETURNING *",
-  //     [friend1Email, friend2Email, friend2Name]
-  //   );
-  //   const res2 = await pool.query(
-  //     "INSERT INTO friends (user_email, friend_email, friend_name) VALUES ($1, $2, $3) RETURNING *",
-  //     [friend2Email, friend1Email, friend1Name]
-  //   );
-  //   socket.emit("accepted-req-new-friends", [...res1.rows, ...res2.rows]);
+  socket.on("accept-friend-request", async (request) => {
+    const { useremail, username, friendemail, friendname } = request;
+    await pool.query(
+      "UPDATE friends SET (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5)",
+      [useremail, username, friendemail, friendname, 0]
+    );
 
-  //   await pool.query(
-  //     "DELETE FROM friendrequests WHERE to_email = $1 OR to_email = $2 OR from_email = $1 OR from_email = $2",
-  //     [friend1Email, friend2Email]
-  //   );
-  //   const response = await pool.query(
-  //     "SELECT * FROM friendrequests WHERE to_email = $1 OR from_email = $1",
-  //     [friend1Email]
-  //   );
-  //   socket.emit("friend-req-accepted", response.rows);
-  // });
+    await pool.query(
+      "UPDATE friends SET (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5)",
+      [useremail, username, friendemail, friendname, 0]
+    );
+
+    io.to(useremail).to(friendemail).emit("friend-request-accepted", {
+      useremail,
+      friendemail,
+    });
+  });
 
   socket.on("disconnect", () => {
     console.log("disconnected with id:", socket.id);
