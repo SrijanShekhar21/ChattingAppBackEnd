@@ -1,4 +1,4 @@
-import express, { query } from "express";
+import express, { query, response } from "express";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import env from "dotenv";
@@ -43,7 +43,6 @@ const pool = new pg.Pool({
   connectionString: process.env.POSTGRES_URL,
 });
 
-let users = [];
 let typingUsers = [];
 
 io.on("connection", (socket) => {
@@ -81,12 +80,18 @@ io.on("connection", (socket) => {
     io.emit("typing", typingUsers);
   });
 
-  socket.on("user-connected", (user) => {
+  socket.on("user-connected", async (user) => {
     socket.join(user.email);
-    //io.to(user.email).emit("new-msgs-and-requests") //to be coded
-    users.push(user.email);
-    console.log("active users: ", users);
-    io.emit("active-users", users);
+    console.log("user connected: ", user.email);
+    try {
+      const response = await pool.query(
+        "INSERT INTO activeusers (email) VALUES ($1) RETURNING *",
+        [user.email]
+      );
+      io.emit("new-active-user", response.rows);
+    } catch (error) {
+      console.log("error adding new user to db");
+    }
   });
 
   //0 -> friends
@@ -140,7 +145,7 @@ io.on("connection", (socket) => {
     io.to(friendemail).emit("friend-request-accepted", response2.rows);
   });
 
-  socket.on("user-disconnect", (useremail) => {
+  socket.on("user-disconnect", async (useremail) => {
     console.log("disconnected with email:", useremail);
 
     //get current time
@@ -162,9 +167,15 @@ io.on("connection", (socket) => {
       console.log("error disconnecting db");
     }
 
-    users = users.filter((user) => user !== useremail);
-    console.log("active users: ", users);
-    io.emit("active-users", users);
+    try {
+      const response = await pool.query(
+        "DELETE FROM activeusers WHERE email = $1 RETURNING *",
+        [useremail]
+      );
+      io.emit("disconnected-active-user", response.rows);
+    } catch (error) {
+      console.log("error deleting activeUser from db");
+    }
   });
 });
 
