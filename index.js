@@ -84,18 +84,11 @@ io.on("connection", (socket) => {
     socket.join(user.email);
     console.log("user connected: ", user.email);
     try {
-      const res1 = await pool.query(
-        "SELECT * FROM activeusers WHERE email = $1",
-        [user.email]
+      await pool.query(
+        "UPDATE friends SET friendactive = $1 WHERE friendemail = $2",
+        [true, user.email]
       );
-      if (res1.rows.length === 0) {
-        await pool.query("INSERT INTO activeusers (email) VALUES ($1)", [
-          user.email,
-        ]);
-        const res = await pool.query("SELECT * FROM activeusers");
-        console.log("connect active users: ", res.rows);
-        io.emit("active-users", res.rows);
-      }
+      io.emit("active-users-updated", "fetch friends again");
     } catch (error) {
       console.log("error adding new user to db");
     }
@@ -154,28 +147,17 @@ io.on("connection", (socket) => {
 
   socket.on("user-disconnect", async (user) => {
     console.log("disconnected with email:", user.email);
-
     console.log("disconnected at: ", user.time);
 
     //add this time to lastSeen column in users table
     try {
-      pool.query("UPDATE friends SET lastseen = $1 WHERE friendemail = $2", [
-        user.time,
-        user.email,
-      ]);
+      await pool.query(
+        "UPDATE friends SET lastseen = $1, friendactive = $2 WHERE friendemail = $3",
+        [user.time, false, user.email]
+      );
+      io.emit("active-users-updated", "fetch friends again");
     } catch (error) {
       console.log("error disconnecting db");
-    }
-
-    try {
-      await pool.query("DELETE FROM activeusers WHERE email = $1", [
-        user.email,
-      ]);
-      const res = await pool.query("SELECT * FROM activeusers");
-      console.log("disconnect active users: ", res.rows);
-      io.emit("active-users", res.rows);
-    } catch (error) {
-      console.log("error deleting activeUser from db");
     }
   });
 });
@@ -191,16 +173,6 @@ app.get("/get-contacts", async (req, res) => {
       "SELECT email, name, lastseen FROM users WHERE email != $1",
       [email]
     );
-    res.send(response.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-app.get("/get-active-users", async (req, res) => {
-  try {
-    const response = await pool.query("SELECT * FROM activeusers");
     res.send(response.rows);
   } catch (err) {
     console.error(err);
