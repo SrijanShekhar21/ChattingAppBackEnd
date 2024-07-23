@@ -83,7 +83,29 @@ io.on("connection", (socket) => {
   socket.on("user-connected", async (user) => {
     socket.join(user.email);
     console.log("user connected: ", user.email);
-    socket.emit("active-users-updated", { email: user.email, active: true });
+
+    //update friendactive to true in friends table
+    try {
+      await pool.query(
+        "UPDATE friends SET friendactive = $1 WHERE friendemail = $2",
+        [true, user.email]
+      );
+
+      //to all users whoose friends he is, send active status
+      const response = await pool.query(
+        "SELECT * FROM friends WHERE friendemail = $1",
+        [user.email]
+      );
+      const friends = response.rows;
+      friends.forEach((friend) => {
+        io.to(friend.useremail).emit("active-users-updated", {
+          email: user.email,
+          active: true,
+        });
+      });
+    } catch (error) {
+      console.log("error connecting db");
+    }
   });
 
   //0 -> friends
@@ -141,13 +163,26 @@ io.on("connection", (socket) => {
     console.log("disconnected with email:", user.email);
     console.log("disconnected at: ", user.time);
 
-    //add this time to lastSeen column in users table
+    //update lastseen to user.time and friendactive to false in friends table
     try {
       await pool.query(
-        "UPDATE friends SET lastseen = $1 WHERE friendemail = $2",
-        [user.time, user.email]
+        "UPDATE friends SET friendactive = $1, lastseen = $2 WHERE friendemail = $3",
+        [false, user.time, user.email]
       );
-      io.emit("active-users-updated", { email: user.email, active: false });
+
+      //to all users whoose friends he is, send active status
+      const response = await pool.query(
+        "SELECT * FROM friends WHERE friendemail = $1",
+        [user.email]
+      );
+      const friends = response.rows;
+      friends.forEach((friend) => {
+        io.to(friend.useremail).emit("active-users-updated", {
+          email: user.email,
+          active: false,
+          lastseen: user.time,
+        });
+      });
     } catch (error) {
       console.log("error disconnecting db");
     }
