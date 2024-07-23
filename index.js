@@ -84,11 +84,18 @@ io.on("connection", (socket) => {
     socket.join(user.email);
     console.log("user connected: ", user.email);
     try {
-      const response = await pool.query(
-        "INSERT INTO activeusers (email) VALUES ($1) RETURNING *",
+      const res1 = await pool.query(
+        "SELECT * FROM activeusers WHERE email = $1",
         [user.email]
       );
-      io.emit("new-active-user", response.rows);
+      if (res1.rows.length === 0) {
+        await pool.query("INSERT INTO activeusers (email) VALUES ($1)", [
+          user.email,
+        ]);
+        const res = await pool.query("SELECT * FROM activeusers");
+        console.log("connect active users: ", res.rows);
+        io.emit("active-users", res.rows);
+      }
     } catch (error) {
       console.log("error adding new user to db");
     }
@@ -145,34 +152,28 @@ io.on("connection", (socket) => {
     io.to(friendemail).emit("friend-request-accepted", response2.rows);
   });
 
-  socket.on("user-disconnect", async (useremail) => {
-    console.log("disconnected with email:", useremail);
+  socket.on("user-disconnect", async (user) => {
+    console.log("disconnected with email:", user.email);
 
-    //get current time
-    const time = new Date().toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-    });
-
-    console.log("disconnected at: ", time);
+    console.log("disconnected at: ", user.time);
 
     //add this time to lastSeen column in users table
     try {
       pool.query("UPDATE friends SET lastseen = $1 WHERE friendemail = $2", [
-        time,
-        useremail,
+        user.time,
+        user.email,
       ]);
     } catch (error) {
       console.log("error disconnecting db");
     }
 
     try {
-      const response = await pool.query(
-        "DELETE FROM activeusers WHERE email = $1 RETURNING *",
-        [useremail]
-      );
-      io.emit("disconnected-active-user", response.rows);
+      await pool.query("DELETE FROM activeusers WHERE email = $1", [
+        user.email,
+      ]);
+      const res = await pool.query("SELECT * FROM activeusers");
+      console.log("disconnect active users: ", res.rows);
+      io.emit("active-users", res.rows);
     } catch (error) {
       console.log("error deleting activeUser from db");
     }
