@@ -83,15 +83,7 @@ io.on("connection", (socket) => {
   socket.on("user-connected", async (user) => {
     socket.join(user.email);
     console.log("user connected: ", user.email);
-    try {
-      await pool.query(
-        "UPDATE friends SET friendactive = $1 WHERE friendemail = $2",
-        [true, user.email]
-      );
-      io.emit("active-users-updated", "fetch friends again");
-    } catch (error) {
-      console.log("error adding new user to db");
-    }
+    socket.emit("active-users-updated", { email: user.email, active: true });
   });
 
   //0 -> friends
@@ -152,10 +144,10 @@ io.on("connection", (socket) => {
     //add this time to lastSeen column in users table
     try {
       await pool.query(
-        "UPDATE friends SET lastseen = $1, friendactive = $2 WHERE friendemail = $3",
-        [user.time, false, user.email]
+        "UPDATE friends SET lastseen = $1 WHERE friendemail = $2",
+        [user.time, user.email]
       );
-      io.emit("active-users-updated", "fetch friends again");
+      io.emit("active-users-updated", { email: user.email, active: false });
     } catch (error) {
       console.log("error disconnecting db");
     }
