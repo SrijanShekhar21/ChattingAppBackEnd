@@ -198,6 +198,16 @@ app.get("/get-contacts", async (req, res) => {
   }
 });
 
+app.get("/get-active-users", async (req, res) => {
+  try {
+    const response = await pool.query("SELECT * FROM activeusers");
+    res.send(response.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 app.get("/get-friends", async (req, res) => {
   try {
     const { email } = req.query;
