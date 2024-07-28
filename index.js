@@ -91,7 +91,7 @@ io.on("connection", (socket) => {
         [true, user.email]
       );
 
-      //to all users whoose friends he is, send active status
+      //to all users whose friends he is, send active status
       const response = await pool.query(
         "SELECT * FROM friends WHERE friendemail = $1",
         [user.email]
@@ -137,12 +137,12 @@ io.on("connection", (socket) => {
   socket.on("accept-friend-request", async (request) => {
     const { useremail, username, friendemail, friendname } = request;
     await pool.query(
-      "UPDATE friends SET status = 0 WHERE useremail = $1 AND friendemail = $2",
+      "UPDATE friends SET status = 0, friendactive = true WHERE useremail = $1 AND friendemail = $2",
       [useremail, friendemail]
     );
 
     await pool.query(
-      "UPDATE friends SET status = 0 WHERE useremail = $1 AND friendemail = $2",
+      "UPDATE friends SET status = 0, friendactive = true WHERE useremail = $1 AND friendemail = $2",
       [friendemail, useremail]
     );
 
