@@ -57,6 +57,7 @@ io.on("connection", (socket) => {
         "INSERT INTO chats (message, from_user, to_user, time, filetype, filename) VALUES ($1, $2, $3, $4, $5, $6)",
         [message, from_user, to_user, time, filetype, filename]
       );
+      console.log("msg saved in db");
     } catch (error) {
       console.log("error saving in db");
     }
@@ -64,21 +65,21 @@ io.on("connection", (socket) => {
     io.to(from_user).to(to_user).emit("received-private-msg", msg);
   });
 
-  socket.on("typing", (data) => {
-    console.log(data.email, "is typing");
-    typingUsers.push(data);
+  // socket.on("typing", (data) => {
+  //   console.log(data.email, "is typing");
+  //   typingUsers.push(data);
 
-    //get socket id of msg.to_user from users array if online
-    const toUser = users.find((user) => user.email === data.chattingWithEmail);
-    const toUserID = toUser ? toUser.id : null;
-    io.to(toUserID).emit("typing", typingUsers);
-  });
+  //   //get socket id of msg.to_user from users array if online
+  //   const toUser = users.find((user) => user.email === data.chattingWithEmail);
+  //   const toUserID = toUser ? toUser.id : null;
+  //   io.to(toUserID).emit("typing", typingUsers);
+  // });
 
-  socket.on("not-typing", (data) => {
-    console.log(data.email, "is not typing");
-    typingUsers = typingUsers.filter((user) => user.email !== data.email);
-    io.emit("typing", typingUsers);
-  });
+  // socket.on("not-typing", (data) => {
+  //   console.log(data.email, "is not typing");
+  //   typingUsers = typingUsers.filter((user) => user.email !== data.email);
+  //   io.emit("typing", typingUsers);
+  // });
 
   socket.on("user-connected", async (user) => {
     socket.join(user.email);
