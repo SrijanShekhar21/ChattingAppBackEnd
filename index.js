@@ -114,6 +114,7 @@ io.on("connection", (socket) => {
   //2 -> user ne friend ko req bheja hai
 
   socket.on("send-friend-request", async (request) => {
+    console.log("atleast yaha aaya hu");
     console.log("friend req: ", request);
     //add this data to db
     const { useremail, username, friendemail, friendname } = request;
@@ -123,10 +124,14 @@ io.on("connection", (socket) => {
         [useremail, username, friendemail, friendname, 2]
       );
 
+      console.log("response1: ", response1.rows);
+
       const response2 = await pool.query(
         "INSERT INTO friends (useremail, username, friendemail, friendname, status) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [friendemail, friendname, useremail, username, 1]
       );
+
+      console.log("response2: ", response2.rows);
 
       io.to(useremail).emit("send-friend-request", response1.rows);
       io.to(friendemail).emit("incoming-friend-request", response2.rows);
@@ -246,7 +251,7 @@ app.get("/get-chats", async (req, res) => {
     );
     //sort response.rows on ascending id
     response.rows.sort((a, b) => a.id - b.id);
-    console.log("response.rows: ", response.rows);
+    // console.log("response.rows: ", response.rows);
     res.send(response.rows);
   } catch (err) {
     console.error(err);
